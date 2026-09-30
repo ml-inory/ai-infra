@@ -15,3 +15,6 @@ _pdftxt/
 __pycache__/
 _*.py
 _*.sh
+
+# 研究过程的交付物（内容已整合进 docs/）
+L*-*-verified-facts.md
