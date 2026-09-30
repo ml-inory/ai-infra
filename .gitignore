@@ -5,3 +5,11 @@
 .dsh-write-test.tmp
 .research/
 .tmp-*/
+
+# 子代理研究过程中的临时脚本与产物
+_dump.py
+_fetch_pdfs.py
+_pdftext*.py
+_pdfsrc/
+_pdftxt/
+__pycache__/
