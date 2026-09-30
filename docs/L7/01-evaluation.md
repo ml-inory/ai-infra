@@ -179,6 +179,31 @@ SLA 必须包含三部分，缺一不可：
 - **扩展效率曲线，而不是单点**：8 / 64 / 512 / 4096 卡各测一次，看曲线从哪开始掉头。**掉头处就是这套网络和并行策略的有效规模上限**——比任何单一峰值都更有决策价值。
 - **弱扩展 vs 强扩展**：前者固定每卡负载、看总吞吐涨得多快；后者固定总问题规模、看时间缩得多快。训练报告通常给弱扩展。
 
+真实测出来的曲线长这样（MLPerf Inference v6.1，同一个 DeepSeek-R1、Server 场景）：
+
+![MLPerf DeepSeek-R1 多卡扩展：每卡吞吐与扩展效率](assets/chart-scaling-efficiency.svg)
+
+| 系统（提交者） | 卡数 | 总吞吐 tok/s | 每卡 tok/s | 相对自身最小规模 |
+|---|---|---|---|---|
+| GB300 NVL72（NVIDIA） | 8 | 67,578 | 8,447 | 100% |
+| GB300 NVL72（NVIDIA） | 72 | 596,944 | 8,291 | 98% |
+| GB300 NVL72（NVIDIA） | 288 | 2,028,030 | 7,042 | 83% |
+| GB200 NVL72（Azure） | 72 | 426,796 | 5,928 | 100% |
+| GB200 NVL72（Azure） | 288 | 1,598,510 | 5,550 | 94% |
+| GB200 NVL72（CoreWeave） | 8 | 56,121 | 7,015 | 100% |
+| GB200 NVL72（CoreWeave） | 72 | 419,778 | 5,830 | 83% |
+| B300（Cisco） | 8 | 66,172 | 8,271 | 100% |
+| B300（Cisco） | 16 | 88,916 | 5,557 | 67% |
+
+*数据来自 MLPerf Inference v6.1 公开结果（datacenter/closed，deepseek-r1，Server 场景），每行是一次真实提交。*
+
+**这张表最值得看的不是百分比，而是基准怎么选。** 三个坑：
+
+1. **基准不同，结论会反过来。** 以「单机 8 卡」为基准，GB300 到 288 卡只剩 83%，看起来不如 Azure 的 GB200（94%）。但把两个系统的**同一规模段**拿来比：72→288 卡，GB300 是 98%、GB200 是 94%——结论正好相反。原因是那个 8 卡成绩是**单机**（整机只有 8 卡 + 2 颗 CPU，走机内 NVLink），而 72 卡是**整柜**（36×GB300 + 18×Grace，全液冷），**两者不是同一套系统**，每卡吞吐本来就有差别。
+2. **所以「扩展效率」必须写清分母。** 是相对单卡、单机，还是相对域内一个柜？报告里不写基准的扩展效率，等于没法验证。本文前面给的公式用「单卡吞吐」做分母，这在实测里往往**取不到**——公开提交很少给 1 卡结果，于是实际工作中大家退化成「相对最小可用规模」。
+3. **跨节点不等于效率崩，跨得不好才崩。** 再看两个反例：Cisco 的 B300 只从 8 卡加到 16 卡，就掉到 67%——因为跨出了单机；而 Azure 的 GB200 从 72 加到 288 卡（跨多个柜）仍有 94%。**决定效率的不是卡数，是通信路径是否还在高速域内、以及并行策略是否匹配**。
+4. **注意别把两个场景混起来看**：上表是 Server（有延迟约束）。同一批提交的 Offline 口径略高（例如 GB300 288 卡：Server 2,028,030 vs Offline 2,705,130 tok/s），因为 Offline 没有延迟约束，可以把 batch 开得更大。
+
 ### 4.3 可用性与故障：MTTR 与有效训练时间
 
 千卡以上规模，**硬件故障是常态而不是异常**。所以：
@@ -356,11 +381,12 @@ MoE 的激活参数少、但**每个 token 要跨卡做 all-to-all 路由**，�
 
 - `assets/chart-pareto-frontier.svg`：InferenceX 实测阶梯（DeepSeek R1，8k/1k 单轮对话）—— https://inferencex.semianalysis.com/run/deepseek-r1-on-mi355x 、 https://inferencex.semianalysis.com/run/deepseek-r1-on-b200
 - `assets/chart-tail-sample-cost.svg`：MLPerf Inference 官方规则附录的早停（early stopping）所需推断次数表 —— https://github.com/mlcommons/inference_policies/blob/master/inference_rules.adoc
+- `assets/chart-scaling-efficiency.svg`：MLPerf Inference v6.1 公开结果原始表（datacenter/closed，deepseek-r1，Server 场景）—— https://github.com/mlcommons/inference_results_v6.1/blob/main/summary.xlsx
 
 两张图都是脚本生成的无依赖 SVG（数据写死在生成脚本里，便于复核与重绘），不是嵌图或截图。要改图或更新数据：
 
 ```bash
-python docs/L7/assets/make_charts.py    # 只依赖标准库，就地覆盖两张 SVG
+python docs/L7/assets/make_charts.py    # 只依赖标准库，就地覆盖全部 SVG
 ```
 
 **记住本文的定位**：榜单数字会按季度过期，本文只保证“方法”和“规则”不过期——具体版本与得分，以官方结果页为准。

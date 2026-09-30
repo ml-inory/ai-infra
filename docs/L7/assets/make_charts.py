@@ -206,6 +206,123 @@ def chart_tail_cost():
     return "".join(s)
 
 
+# --------------------------------------------- chart 3: scaling efficiency
+
+# MLPerf Inference v6.1, datacenter-closed, deepseek-r1, Server scenario,
+# total tokens/s measured on real submissions (summary.xlsx).
+# (accelerators, total tokens/s)
+SCALE_SERIES = [
+    ("GB300 NVL72 · NVIDIA 8→72→288", "#1f6feb",
+     [(8, 67578.3), (72, 596944.0), (288, 2028030.0)], True),
+    ("GB200 NVL72 · Azure 72→288", "#0f7b3f",
+     [(72, 426796.0), (288, 1598510.0)], False),
+    ("GB200 NVL72 · CoreWeave 8→72", "#a12c6b",
+     [(8, 56121.3), (72, 419778.0)], True),
+    ("B300 · Cisco 8→16", "#d97706",
+     [(8, 66171.6), (16, 88915.5)], True),
+]
+SINGLE_NODE_PER_GPU = 67578.3 / 8          # the 8-GPU GB300 single-node point
+
+
+def chart_scaling():
+    W, H = 1180, 620
+    L1, R1 = 88, 560          # left panel (per-GPU throughput)
+    L2, R2 = 690, 1130        # right panel (efficiency)
+    T, B = 104, 512
+    XMIN, XMAX = 6.0, 600.0   # accelerator count, log scale
+
+    import math
+
+    def lx(a, L, R):
+        return L + (math.log10(a) - math.log10(XMIN)) / (math.log10(XMAX) - math.log10(XMIN)) * (R - L)
+
+    def ly(v, Y0, Y1):
+        return B - (math.log10(v) - math.log10(Y0)) / (math.log10(Y1) - math.log10(Y0)) * (B - T)
+
+    def ey(e):
+        return B - (e - 0) / 120.0 * (B - T)
+
+    s = [svg_open(W, H, "MLPerf DeepSeek-R1 多卡扩展：每卡吞吐与扩展效率")]
+    s.append(text(88, 34, "扩展效率：同一模型加卡后，每张卡还剩多少产能", 17, INK, weight="700"))
+    s.append(text(88, 54, "MLPerf Inference v6.1 · DeepSeek-R1 · Server 场景实测（总吞吐换算成每卡）", 12, MUTED))
+
+    # ---- left panel: per-GPU throughput, log scale
+    s.append(text(L1, T - 12, "每卡吞吐 tokens/s（对数轴）", 11.5, INK, weight="700"))
+    for v in [4000, 7000, 10000, 20000, 40000, 70000]:
+        y = ly(v, 3000, 100000)
+        s.append(line(L1, y, R1, y))
+        s.append(text(L1 - 8, y + 4, fmt_int(v), 10.5, MUTED, anchor="end"))
+    for a in [8, 16, 36, 72, 288]:
+        x = lx(a, L1, R1)
+        s.append(line(x, T, x, B, GRID, 1, "3 3"))
+        s.append(text(x, B + 20, str(a), 10.5, MUTED, anchor="middle"))
+    s.append(text((L1 + R1) / 2, B + 42, "加速卡数量（对数轴）", 11.5, MUTED, anchor="middle"))
+
+    # single-node reference: what one 8-GPU node does per GPU
+    yr = ly(SINGLE_NODE_PER_GPU, 3000, 100000)
+    s.append(line(L1, yr, R1, yr, "#a05a00", 1.4, "6 4"))
+    s.append(text(L1 + 6, yr - 8, f"单机 8 卡每卡水平 ≈ {SINGLE_NODE_PER_GPU:,.0f}", 10.5, "#a05a00", weight="700"))
+
+    for name, color, pts, solid in SCALE_SERIES:
+        coords = [(lx(a, L1, R1), ly(t / a, 3000, 100000)) for a, t in pts]
+        if len(coords) > 1:
+            d = "" if solid else ' stroke-dasharray="6 4"'
+            p = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+            s.append(f'<polyline points="{p}" fill="none" stroke="{color}" stroke-width="2.4"{d}/>')
+        for (a, t), (x, y) in zip(pts, coords):
+            s.append(circle(x, y, 4.2, color))
+    # label the GB300 jump
+    gx, gy = lx(288, L1, R1), ly(2028030 / 288, 3000, 100000)
+    s.append(text(gx + 10, gy + 4, f"{2028030/288:,.0f} tok/s/卡", 10.5, "#1f6feb",
+                  weight="700", anchor="start"))
+
+    # ---- right panel: efficiency relative to each system's own baseline
+    s.append(text(L2, T - 12, "扩展效率（各自以最小规模为 100%）", 11.5, INK, weight="700"))
+    for e in [0, 20, 40, 60, 80, 100, 120]:
+        y = ey(e)
+        s.append(line(L2, y, R2, y, GRID if e != 100 else "#a05a00", 1,
+                      None if e == 100 else None))
+        s.append(text(L2 - 8, y + 4, f"{e}%", 10.5, MUTED, anchor="end"))
+    for a in [8, 16, 72, 288]:
+        x = lx(a, L2, R2)
+        s.append(text(x, B + 20, str(a), 10.5, MUTED, anchor="middle"))
+    s.append(text((L2 + R2) / 2, B + 42, "加速卡数量（对数轴）", 11.5, MUTED, anchor="middle"))
+    s.append(text(L2 + 6, ey(100) - 8, "100% = 线性扩展", 10.5, "#a05a00", weight="700"))
+
+    for name, color, pts, solid in SCALE_SERIES:
+        base_pg = pts[0][1] / pts[0][0]
+        coords = [(lx(a, L2, R2), ey((t / a) / base_pg * 100)) for a, t in pts]
+        if len(coords) > 1:
+            d = "" if solid else ' stroke-dasharray="6 4"'
+            p = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+            s.append(f'<polyline points="{p}" fill="none" stroke="{color}" stroke-width="2.4"{d}/>')
+            # fill under the curve to make the gap from 100% visible
+            fill = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+            s.append(f'<polygon points="{fill} {coords[-1][0]:.1f},{ey(0):.1f} {coords[0][0]:.1f},{ey(0):.1f}" '
+                     f'fill="{color}" opacity="0.07"/>')
+        for (a, t), (x, y) in zip(pts, coords):
+            s.append(circle(x, y, 4.2, color))
+            if a == pts[-1][0] and len(pts) > 1:
+                eff = (t / a) / base_pg * 100
+                anchor = "end" if a >= 200 else "start"
+                dx = -8 if anchor == "end" else 8
+                s.append(text(x + dx, y - 10, f"{eff:.0f}%", 11, color, weight="700", anchor=anchor))
+
+    # legend (below the left panel, inside canvas)
+    lgx, lgy = L1, B + 62
+    for i, (name, color, pts, solid) in enumerate(SCALE_SERIES):
+        col = i % 2
+        row = i // 2
+        x = lgx + col * 320
+        y = lgy + row * 22
+        d = '' if solid else ' stroke-dasharray="6 4"'
+        s.append(f'<line x1="{x}" y1="{y}" x2="{x+26}" y2="{y}" stroke="{color}" stroke-width="2.4"{d}/>')
+        s.append(text(x + 34, y + 4, name, 11, INK))
+
+    s.append("</svg>\n")
+    return "".join(s)
+
+
 # ------------------------------------------------------------- write
 
 def write(name, content):
@@ -218,3 +335,4 @@ def write(name, content):
 os.makedirs(ASSETS, exist_ok=True)
 write("chart-pareto-frontier.svg", chart_pareto())
 write("chart-tail-sample-cost.svg", chart_tail_cost())
+write("chart-scaling-efficiency.svg", chart_scaling())

@@ -1,0 +1,16 @@
+# Git for Windows 默认 core.autocrlf=true，会把文本文件在检出时改成 CRLF，
+# 导致同一份文件在不同平台上 diff 出整行差异。这里显式固定为 LF。
+* text=auto eol=lf
+
+# 二进制资源不做行尾转换
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.svg  binary
+*.xlsx binary
+*.pptx binary
+*.docx binary
+
+# 内核模块构建产物
+*.ko binary
+*.o  binary
