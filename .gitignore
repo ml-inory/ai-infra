@@ -3,3 +3,5 @@
 # DSH 子代理/工具产生的临时文件
 .dsh_tmp*
 .dsh-write-test.tmp
+.research/
+.tmp-*/
