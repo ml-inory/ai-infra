@@ -12,8 +12,8 @@ Data sources (all measured / official, no invented numbers):
 """
 import os
 
-# Charts are written next to this script (docs/L7/assets/), so the script is
-# self-contained and can be re-run from anywhere:  python make_charts.py
+# Charts are written next to this script (docs/L7-分布式与集群/assets/), so the
+# script is self-contained and can be re-run from anywhere:  python make_charts.py
 ASSETS = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------- data

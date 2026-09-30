@@ -383,10 +383,10 @@ MoE 的激活参数少、但**每个 token 要跨卡做 all-to-all 路由**，�
 - `assets/chart-tail-sample-cost.svg`：MLPerf Inference 官方规则附录的早停（early stopping）所需推断次数表 —— https://github.com/mlcommons/inference_policies/blob/master/inference_rules.adoc
 - `assets/chart-scaling-efficiency.svg`：MLPerf Inference v6.1 公开结果原始表（datacenter/closed，deepseek-r1，Server 场景）—— https://github.com/mlcommons/inference_results_v6.1/blob/main/summary.xlsx
 
-两张图都是脚本生成的无依赖 SVG（数据写死在生成脚本里，便于复核与重绘），不是嵌图或截图。要改图或更新数据：
+三张图都是脚本生成的无依赖 SVG（数据写死在生成脚本里，便于复核与重绘），不是嵌图或截图。要改图或更新数据：
 
 ```bash
-python docs/L7/assets/make_charts.py    # 只依赖标准库，就地覆盖全部 SVG
+python docs/L7-分布式与集群/assets/make_charts.py    # 只依赖标准库，就地覆盖全部 SVG
 ```
 
 **记住本文的定位**：榜单数字会按季度过期，本文只保证“方法”和“规则”不过期——具体版本与得分，以官方结果页为准。

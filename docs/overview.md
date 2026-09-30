@@ -14,8 +14,8 @@
 
 **已落地的正文**
 
-- [加速器厂家集群产品清单：售价 / 规格 / 指标 / 负载 / 效率](L7/00-product.md)
-- [集群评测：指标、评测集与性能甜点](L7/01-evaluation.md) —— SLA、goodput、$/百万 token、扩展效率、MLPerf 场景、InferenceX 口径
+- [加速器厂家集群产品清单：售价 / 规格 / 指标 / 负载 / 效率](L7-分布式与集群/00-product.md)
+- [集群评测：指标、评测集与性能甜点](L7-分布式与集群/01-evaluation.md) —— SLA、goodput、$/百万 token、扩展效率、MLPerf 场景、InferenceX 口径
 
 ---
 
