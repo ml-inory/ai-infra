@@ -13,3 +13,5 @@ _pdftext*.py
 _pdfsrc/
 _pdftxt/
 __pycache__/
+_*.py
+_*.sh
