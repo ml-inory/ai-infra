@@ -1,20 +1,12 @@
+# 内核模块构建产物
 *.o
 *.ko
-# DSH 子代理/工具产生的临时文件
+
+# Python 缓存
+__pycache__/
+
+# 工具/代理工作过程中产生的临时文件与目录
 .dsh_tmp*
 .dsh-write-test.tmp
 .research/
 .tmp-*/
-
-# 子代理研究过程中的临时脚本与产物
-_dump.py
-_fetch_pdfs.py
-_pdftext*.py
-_pdfsrc/
-_pdftxt/
-__pycache__/
-_*.py
-_*.sh
-
-# 研究过程的交付物（内容已整合进 docs/）
-L*-*-verified-facts.md
