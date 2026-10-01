@@ -8,5 +8,10 @@ __pycache__/
 # 工具/代理工作过程中产生的临时文件与目录
 .dsh_tmp*
 .dsh-write-test.tmp
+.dsh-acl-report/
 .research/
 .tmp-*/
+
+# 仿真产物（mini_npu/sim 的 make 会生成）
+*.vcd
+mini_npu/sim/sim_*
